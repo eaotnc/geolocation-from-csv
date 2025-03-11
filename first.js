@@ -37,9 +37,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var axios_1 = require("axios");
-var fs = require("fs");
-var csv = require("csv-parser");
-var csv_writer_1 = require("csv-writer");
 // Replace with your Google Maps API key
 var API_KEY = "AIzaSyCUba6hv6SV0IdFayM4gvbw";
 // Geocode function to fetch latitude and longitude
@@ -49,7 +46,7 @@ function geocodeAddress(address) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    url = "https://maps.googleapis.com/maps/api/geocode/json?address=".concat(encodeURIComponent(address), "&language=th&key=").concat(API_KEY);
+                    url = "https://maps.googleapis.com/maps/api/geocode/json?address=".concat(encodeURIComponent(address), "&key=").concat(API_KEY);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -75,91 +72,56 @@ function geocodeAddress(address) {
         });
     });
 }
-// Function to read CSV file
-function readCsv(filePath) {
-    var results = [];
-    return new Promise(function (resolve, reject) {
-        fs.createReadStream(filePath)
-            .pipe(csv())
-            .on("data", function (data) { return results.push(data); })
-            .on("end", function () { return resolve(results); })
-            .on("error", function (error) { return reject(error); });
-    });
-}
-// Function to write CSV file
-function writeCsv(filePath, data) {
+// Main function to process the table
+function processAddresses(addresses) {
     return __awaiter(this, void 0, void 0, function () {
-        var csvWriter;
+        var _i, addresses_1, addressData, address, location_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
-                        path: filePath,
-                        header: [
-                            { id: "No", title: "No" },
-                            { id: "Address", title: "Address" },
-                            { id: "latitude", title: "latitude" },
-                            { id: "longitude", title: "longitude" },
-                        ],
-                    });
-                    return [4 /*yield*/, csvWriter.writeRecords(data)];
-                case 1:
-                    _a.sent();
-                    console.log("CSV file written successfully to ".concat(filePath));
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-// Main function to process the CSV
-function processCsv(inputFilePath, outputFilePath) {
-    return __awaiter(this, void 0, void 0, function () {
-        var addresses, _i, addresses_1, addressData, Address, location_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, readCsv(inputFilePath)];
-                case 1:
-                    addresses = _a.sent();
                     _i = 0, addresses_1 = addresses;
-                    _a.label = 2;
-                case 2:
-                    if (!(_i < addresses_1.length)) return [3 /*break*/, 5];
+                    _a.label = 1;
+                case 1:
+                    if (!(_i < addresses_1.length)) return [3 /*break*/, 4];
                     addressData = addresses_1[_i];
-                    Address = addressData.Address;
-                    return [4 /*yield*/, geocodeAddress(Address)];
-                case 3:
+                    address = addressData.address;
+                    return [4 /*yield*/, geocodeAddress(address)];
+                case 2:
                     location_2 = _a.sent();
                     if (location_2) {
                         addressData.latitude = location_2.lat;
                         addressData.longitude = location_2.lng;
                     }
-                    _a.label = 4;
-                case 4:
+                    _a.label = 3;
+                case 3:
                     _i++;
-                    return [3 /*break*/, 2];
-                case 5: 
-                // Write the updated data to a new CSV file
-                return [4 /*yield*/, writeCsv(outputFilePath, addresses)];
-                case 6:
-                    // Write the updated data to a new CSV file
-                    _a.sent();
-                    console.log("Geocoding completed!");
-                    return [2 /*return*/];
+                    return [3 /*break*/, 1];
+                case 4: return [2 /*return*/, addresses];
             }
         });
     });
 }
+// Example data (replace with your table data)
+var addresses = [
+    {
+        id: 1,
+        address: "94 ห้างบิ๊กซี เชียงใหม่ 2 ชั้น 2 ห้อง 27,36 หมู่ 4 ถ. เชียงใหม่ - ลำปาง ต. หนองป่าครั่ง อ. เมือง จ.เชียงใหม่  50000",
+    },
+    {
+        id: 2,
+        address: "208 ห้างบิ๊กซีเชียงใหม่ ชั้น 1 ห้อง GCR 022 ม.3 ตำบลท่าศาลา อำเภอเมืองเชียงใหม่ เชียงใหม่ 50000",
+    },
+    // Add more addresses here...
+];
 // Run the program
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var inputFilePath, outputFilePath;
+    var updatedAddresses;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                inputFilePath = "input.csv";
-                outputFilePath = "output.csv";
-                return [4 /*yield*/, processCsv(inputFilePath, outputFilePath)];
+            case 0: return [4 /*yield*/, processAddresses(addresses)];
             case 1:
-                _a.sent();
+                updatedAddresses = _a.sent();
+                console.log(updatedAddresses);
                 return [2 /*return*/];
         }
     });

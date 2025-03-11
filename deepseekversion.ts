@@ -1,12 +1,14 @@
 import axios from "axios";
+import * as fs from "fs";
+import * as csv from "csv-parser";
+import { createObjectCsvWriter as createCsvWriter } from "csv-writer";
 
 // Replace with your Google Maps API key
-const API_KEY = "AIzaSyCUba6hv6SV0IdFayM4gvbw-yQ7F_E6OM0";
-
+const API_KEY = "xxx";
 // Define the structure of the address data
 interface AddressData {
-  id: number;
-  address: string;
+  No: string;
+  Address: string;
   latitude?: number;
   longitude?: number;
 }
@@ -17,7 +19,7 @@ async function geocodeAddress(
 ): Promise<{ lat: number; lng: number } | null> {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
     address
-  )}&key=${API_KEY}`;
+  )}&language=th&key=${API_KEY}`;
 
   try {
     const response = await axios.get(url);
@@ -25,7 +27,6 @@ async function geocodeAddress(
 
     if (results.length > 0) {
       const location = results[0].geometry.location;
-      console.log("🚀 ~ location:", location);
       return { lat: location.lat, lng: location.lng };
     } else {
       console.error(`No results found for address: ${address}`);
@@ -37,13 +38,44 @@ async function geocodeAddress(
   }
 }
 
-// Main function to process the table
-async function processAddresses(
-  addresses: AddressData[]
-): Promise<AddressData[]> {
+// Function to read CSV file
+function readCsv(filePath: string): Promise<AddressData[]> {
+  const results: AddressData[] = [];
+
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (data) => results.push(data))
+      .on("end", () => resolve(results))
+      .on("error", (error) => reject(error));
+  });
+}
+
+// Function to write CSV file
+async function writeCsv(filePath: string, data: AddressData[]) {
+  const csvWriter = createCsvWriter({
+    path: filePath,
+    header: [
+      { id: "No", title: "No" },
+      { id: "Address", title: "Address" },
+      { id: "latitude", title: "latitude" },
+      { id: "longitude", title: "longitude" },
+    ],
+  });
+
+  await csvWriter.writeRecords(data);
+  console.log(`CSV file written successfully to ${filePath}`);
+}
+
+// Main function to process the CSV
+async function processCsv(inputFilePath: string, outputFilePath: string) {
+  // Read the CSV file
+  const addresses = await readCsv(inputFilePath);
+
+  // Geocode each address
   for (const addressData of addresses) {
-    const { address } = addressData;
-    const location = await geocodeAddress(address);
+    const { Address } = addressData;
+    const location = await geocodeAddress(Address);
 
     if (location) {
       addressData.latitude = location.lat;
@@ -51,26 +83,15 @@ async function processAddresses(
     }
   }
 
-  return addresses;
+  // Write the updated data to a new CSV file
+  await writeCsv(outputFilePath, addresses);
+  console.log("Geocoding completed!");
 }
-
-// Example data (replace with your table data)
-const addresses: AddressData[] = [
-  {
-    id: 1,
-    address:
-      "94 ห้างบิ๊กซี เชียงใหม่ 2 ชั้น 2 ห้อง 27,36 หมู่ 4 ถ. เชียงใหม่ - ลำปาง ต. หนองป่าครั่ง อ. เมือง จ.เชียงใหม่  50000",
-  },
-  {
-    id: 2,
-    address:
-      "208 ห้างบิ๊กซีเชียงใหม่ ชั้น 1 ห้อง GCR 022 ม.3 ตำบลท่าศาลา อำเภอเมืองเชียงใหม่ เชียงใหม่ 50000",
-  },
-  // Add more addresses here...
-];
 
 // Run the program
 (async () => {
-  const updatedAddresses = await processAddresses(addresses);
-  console.log(updatedAddresses);
+  const inputFilePath = "input.csv"; // Path to your input CSV file
+  const outputFilePath = "output.csv"; // Path to save the output CSV file
+
+  await processCsv(inputFilePath, outputFilePath);
 })();
